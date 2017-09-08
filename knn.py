@@ -27,7 +27,7 @@ def compute_distances(Xtrain, X):
 	#				 YOUR CODE HERE					#
 	#####################################################
 	dists = [[np.sqrt(np.sum(np.square(test_image - training_sample))) for training_sample in Xtrain] for test_image in X]
-	return dists
+	return np.array(dists)
 
 ###### Q5.2 ######
 def predict_labels(k, ytrain, dists):
@@ -47,7 +47,18 @@ def predict_labels(k, ytrain, dists):
 	#####################################################
 	#				 YOUR CODE HERE					#
 	#####################################################
-	return ypred
+	ypred = []
+	for distances in dists:
+		nearest_neighbors = np.argsort(distances)[:k]
+		nearest_neighbors = list(map(lambda x: ytrain[x], nearest_neighbors))
+		counts = {}
+		for x in nearest_neighbors:
+			counts[x] = counts.get(x, 0) + 1
+
+		max_label = max(counts, key=counts.get)
+		labels =  [key for key, value in counts.items() if value == counts[max_label]]
+		ypred.append(min(labels))
+	return np.array(ypred)
 
 ###### Q5.3 ######
 def compute_accuracy(y, ypred):
@@ -64,7 +75,12 @@ def compute_accuracy(y, ypred):
 	#####################################################
 	#				 YOUR CODE HERE					#
 	#####################################################
-	return acc
+	count = 0
+	for i in range(len(y)):
+		if y[i] == ypred[i]:
+			count+=1
+
+	return count/len(ypred)
 
 ###### Q5.4 ######
 def find_best_k(K, ytrain, dists, yval):
@@ -87,6 +103,11 @@ def find_best_k(K, ytrain, dists, yval):
 	#####################################################
 	#				 YOUR CODE HERE					#
 	#####################################################
+
+
+	validation_accuracy = [(k,compute_accuracy(yval, predict_labels(k, ytrain, dists))) for k in K]
+	best_k = max(validation_accuracy, key=lambda x:x[1])[0]
+	validation_accuracy = list(map(lambda x:x[1], validation_accuracy))
 	return best_k, validation_accuracy
 
 
@@ -127,29 +148,30 @@ def main():
 	Xtrain, ytrain, Xval, yval, Xtest, ytest = data_processing(data)
 
 	dists = compute_distances(Xtrain, Xval)
-	with open('dists', 'wb') as fp:
-		pickle.dump(dists,fp)
-	
-	# #===============Compute validation accuracy when k=5=============
-	# ypred = predict_labels(5, ytrain, dists)
-	# acc = compute_accuracy(yval, ypred)
-	# print("The validation accuracy is", acc, "when k =", k)
+	# with open('dists', 'wb') as fp:
+	# 	pickle.dump(dists,fp)
+
+	#===============Compute validation accuracy when k=5=============
+	k = 5
+	ypred = predict_labels(k, ytrain, dists)
+	acc = compute_accuracy(yval, ypred)
+	print("The validation accuracy is", acc, "when k =", k)
 	#
-	# #==========select the best k by using validation set==============
-	# best_k,validation_accuracy = find_best_k(K, ytrain, dists, yval)
-	#
-	#
-	# #===============test the performance with your best k=============
-	# dists = compute_distances(Xtrain, Xtest)
-	# ypred = predict_labels(best_k, ytrain, dists)
-	# test_accuracy = compute_accuracy(ytest, ypred)
-	#
-	# #====================write your results to file===================
-	# f=open(output_file, 'w')
-	# for i in range(len(K)):
-	# 	f.write('%d %.3f' % (K[i], validation_accuracy[i])+'\n')
-	# f.write('%s %.3f' % ('test', test_accuracy))
-	# f.close()
+	#==========select the best k by using validation set==============
+	best_k,validation_accuracy = find_best_k(K, ytrain, dists, yval)
+	print (best_k, validation_accuracy)
+
+	# ===============test the performance with your best k=============
+	dists = compute_distances(Xtrain, Xtest)
+	ypred = predict_labels(best_k, ytrain, dists)
+	test_accuracy = compute_accuracy(ytest, ypred)
+
+	# ====================write your results to file===================
+	f=open(output_file, 'w')
+	for i in range(len(K)):
+		f.write('%d %.3f' % (K[i], validation_accuracy[i])+'\n')
+	f.write('%s %.3f' % ('test', test_accuracy))
+	f.close()
 
 if __name__ == "__main__":
 	main()
