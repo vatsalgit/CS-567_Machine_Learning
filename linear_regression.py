@@ -21,7 +21,8 @@ def linear_regression_noreg(X, y):
   """
   #####################################################
   #				 YOUR CODE HERE					#
-  #####################################################		 
+  #####################################################
+  w = np.linalg.pinv(X).dot(y)
   return w
 
 ###### Q4.2 ######
@@ -37,8 +38,10 @@ def regularized_linear_regression(X, y, lambd):
     """
   #####################################################
   #				 YOUR CODE HERE					#
-  #####################################################		 
-  return w
+  #####################################################
+  n_col = X.shape[1]
+  return np.linalg.lstsq(X.T.dot(X) + lambd * np.identity(n_col), X.T.dot(y))[0]
+
 
 ###### Q4.3 ######
 def tune_lambda(Xtrain, ytrain, Xval, yval, lambds):
@@ -55,7 +58,9 @@ def tune_lambda(Xtrain, ytrain, Xval, yval, lambds):
     """
   #####################################################
   #				 YOUR CODE HERE					#
-  #####################################################		 
+  #####################################################
+  errors = [(lambd,test_error(regularized_linear_regression(Xtrain, ytrain, lambd), Xval, yval)) for lambd in lambds]
+  bestlambda = min(errors, key = lambda x : x[1])[0]
   return bestlambda
 
 ###### Q4.4 ######
@@ -69,6 +74,8 @@ def test_error(w, X, y):
     Returns:
     - err: the mean square error
     """
+
+  err = np.sum([np.square(np.dot(X, w) - y[i]) for i in range(len(X))]) / len(X)
   return err
 
 
@@ -111,7 +118,7 @@ def main():
   print("======== Question 3.1 Linear Regression ========")
   print("dimensionality of the model parameter is ", len(w), ".", sep="")
   print("model parameter is ", np.array_str(w))
-  
+
   # =========================Q3.2 regularized linear_regression=====================
   lambd = 5.0
   wl = regularized_linear_regression(Xtrain, ytrain, lambd)
@@ -133,7 +140,6 @@ def main():
   print("\n")
   print("======== Question 3.4 report MSE ========")
   print("MSE on test is %.3f" % mse)
-  
+
 if __name__ == "__main__":
     main()
-    
